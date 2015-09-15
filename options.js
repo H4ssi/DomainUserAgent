@@ -1,89 +1,73 @@
 /*
  * I use this thing as a dictionary
  **/
-var domains = {}
+var domains = {};
+
 
 /*
  * Deletes the item with the given key from the dictionary
  * then reloads the table and stores the settings
  **/
 function delItem(key) {
-    delete domains[key]
-    createTable()
-    chrome.storage.sync.set({'domains': domains})
+    delete domains[key];
+    chrome.storage.sync.set({'domains': domains});
+    createTable();
+}
+
+function toDOM(html, selector) {
+    var parser = new DOMParser();
+
+    return parser.parseFromString('<!DOCTYPE html><html><body>' + html + '</body></html>', 'text/html').querySelector(selector);
+}
+
+function appendRow(table, domain, userAgent) {
+    var rowHtml = '<table><tbody><tr><td>'+domain+'</td><td>'+userAgent+'</td><td><button>Remove</button></td></tr></tbody></table>';
+
+    var row = toDOM(rowHtml, 'tr');
+
+    row.querySelector('button').addEventListener('click', function() { delItem(domain); });
+
+    table.querySelector('tbody').appendChild(row);
 }
 
 /**
  * Creates the HTML table to put inside the options page
  **/
 function createTable() {
-    table = "<table>"
+    var tableHtml = "<table><thead><tr><th>Domain</th><th>User Agent</th><td></td></tr></head><tbody></tbody></table>";
 
-    table += "<head>"
-    table+="<tr>"
-    table+="<td>Domain</td>"
-    table+="<td>UserAgent</td>"
-    table+="<td></td>"
-    table+="</tr>"
-    table += "</head>"
+    var table = toDOM(tableHtml, 'table');
+    
+    var tableDiv = document.getElementById("tablediv");
+    
+    tableDiv.replaceChild(table, tableDiv.firstChild);
 
+    var domainNames = Object.keys(domains).sort();
+    
+    domainNames.forEach(function (domain) {
+        appendRow(table, domain, domains[domain]);
+    });
 
-    k = Object.keys(domains)
-    for (i=0; i<k.length; i++) {
-        colour = i % 2 ? '#151515' : '#2B2B2B'
-        table+='<tr bgcolor="' + colour  + '">'
+    var addRowHtml = '<table><tbody><tr><td><input class="domain"></td><td><input class="userAgent"></td><td><button>Add</button></td></tr></tbody></table>';
 
-        table+="<td>"
-        table+=k[i]
-        table+="</td>"
+    var addRow = toDOM(addRowHtml, 'tr');
 
-        table+="<td>"
-        table+=domains[k[i]]
-        table+="</td>"
+    addRow.querySelector('button').addEventListener('click', function() {
+        var domain = addRow.querySelector('.domain').value;
+        var userAgent = addRow.querySelector('.userAgent').value;
+        addDomainToSettings(domains, domain, userAgent);
+        createTable();
+    });
 
-        table+="<td>"
-        table+='<button class="thinButton" id="btnremove'+ i + '">Remove</button>'
-        table+="</td>"
-
-        table+="</tr>"
-    }
-
-    table += '<tr>'
-    table += '<td><input type="text" id="hostname"></td>'
-    table += '<td><input type="text" id="agent"></td>'
-    table += '<td><button class="thinButton" id="btnAdd">Add</button></td>'
-    table += '</tr>'
-
-    table += "</table>"
-
-    d = document.getElementById("tablediv");
-    d.innerHTML = table;
-
-    for (i=0; i<k.length; i++) {
-        b = document.getElementById("btnremove"+i);
-
-        /* js is the worst language ever, I refuse to put an explicatory comment */
-        f = function(q){return function () {delItem(q)}}
-        b.addEventListener("click",f(k[i]))
-    }
-
-    f = function() {
-        hostname_obj = document.getElementById("hostname")
-        agent_obj = document.getElementById("agent")
-        hostname = hostname_obj.value
-        agent = agent_obj.value
-        addDomainToSettings(domains, hostname, agent)
-        createTable()
-    }
-
-    document.getElementById("btnAdd").addEventListener("click", f);
+    table.querySelector('tbody').appendChild(addRow);
 }
 
-chrome.storage.sync.get('domains',
+chrome.storage.sync.get(null,
     function (result) {
-        domains = result.domains
-        if (domains == undefined)
-            domains = {}
-        createTable()
+        domains = result.domains;
+        if (domains == undefined) {
+            domains = {};
+        }
+        createTable();
     }
 );
