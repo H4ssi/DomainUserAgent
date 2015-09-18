@@ -3,6 +3,12 @@
  **/
 var domains = {};
 
+var userAgentsSelect = '<select class="userAgentSelect">'
+ + '<option value="Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)">IE 10</option>'
+ + '<option value="Mozilla/5.0 (X11; Linux x86_64; rv:40.0) Gecko/20100101 Firefox/40.0">Firefox</option>'
+ + '<option value="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36">Chrome</option>'
+ + '<option value="" selected>Custom</option>'
+ + '</select>';
 
 /*
  * Deletes the item with the given key from the dictionary
@@ -48,15 +54,24 @@ function createTable() {
         appendRow(table, domain, domains[domain]);
     });
 
-    var addRowHtml = '<table><tbody><tr><td><input class="domain"></td><td><input class="userAgent"></td><td><button>Add</button></td></tr></tbody></table>';
+    var addRowHtml = '<table><tbody><tr><td><input class="domain"></td><td>'+userAgentsSelect+'<input class="userAgent"></td><td><button>Add</button></td></tr></tbody></table>';
 
     var addRow = toDOM(addRowHtml, 'tr');
 
-    addRow.querySelector('button').addEventListener('click', function() {
-        var domain = addRow.querySelector('.domain').value;
-        var userAgent = addRow.querySelector('.userAgent').value;
-        addDomainToSettings(domains, domain, userAgent);
+    var domain = addRow.querySelector('.domain');
+    var userAgentSelect = addRow.querySelector('.userAgentSelect');
+    var userAgent = addRow.querySelector('.userAgent');
+    var button = addRow.querySelector('button');
+
+    button.addEventListener('click', function() {
+        addDomainToSettings(domains, domain.value, userAgent.value);
         createTable();
+    });
+    userAgentSelect.addEventListener('change', function() {
+        userAgent.value = userAgentSelect.value;
+    });
+    userAgent.addEventListener('input', function() {
+        userAgentSelect.value = ''; // reset to "custom"
     });
 
     table.querySelector('tbody').appendChild(addRow);
